@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Kuliner</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #f8f8f8;
+            color: #333;
+            padding-bottom: 64px; /* Add padding to the bottom of the body to prevent content from being hidden by the fixed bottom nav */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Basic modal overlay styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        /* Specific styling for product detail modal */
+        #product-detail-modal .modal-content {
+            width: 400px; /* Adjust as needed for mobile */
+        }
+
+        /* Specific styling for cart modal */
+        #cart-modal .modal-content {
+            width: 450px; /* Adjust as needed for mobile */
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 640px) {
+            #product-detail-modal .modal-content,
+            #cart-modal .modal-content {
+                width: 95%;
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Main Content Area -->
+    <main class="container mx-auto mt-4 p-4 mb-16"> <!-- Adjusted margin-top and added margin-bottom for the fixed bottom nav -->
+
+        <!-- Home Section -->
+        <section id="home" class="page-section active">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Warung Bang Iyunk</h1>
+
+            <!-- Search Bar -->
+            <div class="mb-8 p-3 bg-white rounded-lg shadow-sm flex items-center"> <!-- Changed p-4 to p-3 for smaller size -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" id="search-input" placeholder="Cari makanan..." class="flex-grow p-2 outline-none text-gray-700 placeholder-gray-400">
+            </div>
+
+            <!-- Product Grid -->
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Product cards will be injected here by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Categories Section -->
+        <section id="categories" class="page-section hidden">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Kategori Makanan</h1>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <button class="category-filter p-4 bg-white rounded-lg shadow-md text-center hover:bg-orange-100 transition-colors duration-200" data-category="Semua">
+                    <img src="https://source.unsplash.com/random/100x100/?food,all" alt="Semua Kategori" class="w-20 h-20 mx-auto mb-2 rounded-full object-cover">
+                    <span class="font-semibold text-gray-700">Semua</span>
+                </button>
+                <button class="category-filter p-4 bg-white rounded-lg shadow-md text-center hover:bg-red-100 transition-colors duration-200" data-category="Makanan Utama">
+                    <img src="https://source.unsplash.com/random/100x100/?food,main-course" alt="Makanan Utama" class="w-20 h-20 mx-auto mb-2 rounded-full object-cover">
+                    <span class="font-semibold text-gray-700">Makanan Utama</span>
+                </button>
+                <button class="category-filter p-4 bg-white rounded-lg shadow-md text-center hover:bg-green-100 transition-colors duration-200" data-category="Minuman">
+                    <img src="https://source.unsplash.com/random/100x100/?drink,beverage" alt="Minuman" class="w-20 h-20 mx-auto mb-2 rounded-full object-cover">
+                    <span class="font-semibold text-gray-700">Minuman</span>
+                </button>
+                <button class="category-filter p-4 bg-white rounded-lg shadow-md text-center hover:bg-purple-100 transition-colors duration-200" data-category="Camilan">
+                    <img src="https://source.unsplash.com/random/100x100/?snack,appetizer" alt="Camilan" class="w-20 h-20 mx-auto mb-2 rounded-full object-cover">
+                    <span class="font-semibold text-gray-700">Camilan</span>
+                </button>
+                <button class="category-filter p-4 bg-white rounded-lg shadow-md text-center hover:bg-blue-100 transition-colors duration-200" data-category="Dessert">
+                    <img src="https://source.unsplash.com/random/100x100/?dessert,sweet" alt="Dessert" class="w-20 h-20 mx-auto mb-2 rounded-full object-cover">
+                    <span class="font-semibold text-gray-700">Dessert</span>
+                </button>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mt-8 mb-4">Produk Berdasarkan Kategori</h2>
+            <div id="category-product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Products filtered by category will be injected here -->
+            </div>
+        </section>
+
+        <!-- Address Section -->
+        <section id="address" class="page-section hidden">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Manajemen Alamat Pengiriman</h1>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <p class="text-gray-700 mb-4">Anda dapat mengatur alamat pengiriman Anda di sini.</p>
+                <textarea id="delivery-address" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" rows="4" placeholder="Masukkan alamat lengkap Anda..."></textarea>
+                <button id="save-address-button" class="mt-4 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 shadow-md">Simpan Alamat</button>
+                <p id="address-status" class="mt-3 text-sm text-gray-600"></p>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile" class="page-section hidden">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Pengaturan Profil</h1>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <p class="text-gray-700 mb-4">Kelola informasi akun Anda.</p>
+                <div class="mb-4">
+                    <label for="profile-name" class="block text-gray-700 font-medium mb-2">Nama Lengkap:</label>
+                    <input type="text" id="profile-name" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Nama Anda">
+                </div>
+                <div class="mb-4">
+                    <label for="profile-email" class="block text-gray-700 font-medium mb-2">Email:</label>
+                    <input type="email" id="profile-email" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="email@example.com">
+                </div>
+                <button id="save-profile-button" class="mt-4 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 shadow-md">Simpan Perubahan</button>
+                <p id="profile-status" class="mt-3 text-sm text-gray-600"></p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Navbar (Fixed Bottom) -->
+    <nav class="fixed bottom-0 left-0 w-full bg-white shadow-md z-50 p-4 flex justify-around items-center">
+        <button class="nav-link flex flex-col items-center text-gray-700 hover:text-orange-600 transition-colors duration-200" data-target="home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2 2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span class="text-xs mt-1">Beranda</span>
+        </button>
+        <button class="nav-link flex flex-col items-center text-gray-700 hover:text-orange-600 transition-colors duration-200" data-target="categories">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+            <span class="text-xs mt-1">Kategori</span>
+        </button>
+        <button class="nav-link flex flex-col items-center text-gray-700 hover:text-orange-600 transition-colors duration-200" data-target="address">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span class="text-xs mt-1">Alamat</span>
+        </button>
+        <button class="nav-link flex flex-col items-center text-gray-700 hover:text-orange-600 transition-colors duration-200" data-target="profile">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span class="text-xs mt-1">Profil</span>
+        </button>
+        <button id="cart-button" class="relative flex flex-col items-center p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span id="cart-count" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">0</span>
+            <span class="text-xs mt-1">Keranjang</span>
+        </button>
+    </nav>
+
+    <!-- Product Detail Modal -->
+    <div id="product-detail-modal" class="modal-overlay">
+        <div class="modal-content relative">
+            <button class="absolute top-3 right-3 text-gray-500 hover:text-gray-800" onclick="closeModal('product-detail-modal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <img id="modal-product-image" src="" alt="Product Image" class="w-full h-48 object-cover rounded-lg mb-4">
+            <h2 id="modal-product-name" class="text-2xl font-bold text-gray-800 mb-2"></h2>
+            <p id="modal-product-description" class="text-gray-600 text-sm mb-4"></p>
+            <p id="modal-product-price" class="text-xl font-semibold text-green-600 mb-4"></p>
+            
+            <!-- Dynamic Options will be injected here -->
+            <div id="modal-product-options" class="space-y-4 mb-4"></div>
+
+            <div class="flex items-center justify-between mt-4">
+                <div class="flex items-center space-x-2">
+                    <button id="modal-qty-minus" class="px-3 py-1 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors duration-200">-</button>
+                    <span id="modal-qty" class="font-semibold text-lg">1</span>
+                    <button id="modal-qty-plus" class="px-3 py-1 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors duration-200">+</button>
+                </div>
+                <button id="add-to-cart-from-modal" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 shadow-md">Tambah ke Keranjang</button>
+            </div>
+            <button id="order-via-wa-from-modal" class="w-full mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 shadow-md">Pesan via WhatsApp</button>
+            <button id="share-product-via-wa" class="w-full mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md">Bagikan Produk via WhatsApp</button>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="modal-overlay">
+        <div class="modal-content relative">
+            <button class="absolute top-3 right-3 text-gray-500 hover:text-gray-800" onclick="closeModal('cart-modal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Keranjang Belanja</h2>
+            <div id="cart-items" class="space-y-4 max-h-80 overflow-y-auto pr-2">
+                <!-- Cart items will be injected here by JavaScript -->
+            </div>
+            <div class="border-t border-gray-200 pt-4 mt-4 flex justify-between items-center">
+                <span class="text-lg font-semibold text-gray-800">Total:</span>
+                <span id="cart-total" class="text-2xl font-bold text-green-600">Rp 0</span>
+            </div>
+            <button id="checkout-via-wa" class="w-full mt-6 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 shadow-md">Konfirmasi Pesanan via WhatsApp</button>
+            <button id="clear-cart-button" class="w-full mt-2 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 shadow-md">Bersihkan Keranjang</button>
+        </div>
+    </div>
+
+    <script>
+        // Data Produk
+        const products = [
+            {
+                id: 1,
+                name: "Nasi Goreng Spesial",
+                price: 25000,
+                image: "images/nasigorengspesial.png",
+                description: "Nasi goreng lezat dengan telur, ayam suwir, dan kerupuk.",
+                category: "Makanan Utama",
+                options: [
+                    {
+                        name: "Tingkat Pedas",
+                        type: "radio",
+                        choices: ["Tidak Pedas", "Pedas Sedang", "Pedas"],
+                        default: "Tidak Pedas"
+                    },
+                    {
+                        name: "Tambahan",
+                        type: "checkbox",
+                        choices: ["Telur Mata Sapi", "Kerupuk Tambahan", "Ayam Suwir"]
+                    }
+                ]
+            },
+            {
+                id: 2,
+                name: "Mie Ayam Bakso",
+                price: 22000,
+                image: "images/mieayambakso.png",
+                description: "Mie ayam dengan topping bakso, pangsit, dan sawi hijau.",
+                category: "Makanan Utama",
+                options: [
+                    {
+                        name: "Tingkat Pedas",
+                        type: "radio",
+                        choices: ["Tidak Pedas", "Pedas Sedang", "Pedas"],
+                        default: "Tidak Pedas"
+                    },
+                    {
+                        name: "Tambahan",
+                        type: "checkbox",
+                        choices: ["Pangsit Goreng", "Bakso Tambahan", "Ceker"]
+                    }
+                ]
+            },
+            {
+                id: 3,
+                name: "Es Teh Manis",
+                price: 8000,
+                image: "images/estehmanis.png",
+                description: "Es teh segar dengan gula asli.",
+                category: "Minuman",
+                options: [
+                    {
+                        name: "Gula",
+                        type: "radio",
+                        choices: ["Normal", "Kurang Gula", "Tanpa Gula"],
+                        default: "Normal"
+                    },
+                    {
+                        name: "Tambahan",
+                        type: "checkbox",
+                        choices: ["Lemon", "Susu"]
+                    }
+                ]
+            },
+            {
+                id: 4,
+                name: "Sate Ayam Madura",
+                price: 30000,
+                image: "images/sateayammadura.png",
+                description: "Sate ayam empuk dengan bumbu kacang khas Madura.",
+                category: "Makanan Utama",
+                options: [
+                    {
+                        name: "Tingkat Pedas Bumbu",
+                        type: "radio",
+                        choices: ["Tidak Pedas", "Pedas Sedang", "Pedas"],
+                        default: "Tidak Pedas"
+                    },
+                    {
+                        name: "Tambahan",
+                        type: "checkbox",
+                        choices: ["Lontong", "Nasi", "Bawang Goreng"]
+                    }
+                ]
+            },
+            {
+                id: 5,
+                name: "Jus Alpukat",
+                price: 15000,
+                image: "images/jusalpukat.png",
+                description: "Jus alpukat segar dengan susu coklat.",
+                category: "Minuman",
+                options: [
+                    {
+                        name: "Gula",
+                        type: "radio",
+                        choices: ["Normal", "Kurang Gula", "Tanpa Gula"],
+                        default: "Normal"
+                    },
+                    {
+                        name: "Susu",
+                        type: "radio",
+                        choices: ["Susu Coklat", "Susu Putih", "Tanpa Susu"],
+                        default: "Susu Coklat"
+                    }
+                ]
+            },
+            {
+                id: 6,
+                name: "Kentang Goreng",
+                price: 12000,
+                image: "images/kentanggoreng.png",
+                description: "Kentang goreng renyah dengan saus pilihan.",
+                category: "Camilan",
+                options: [
+                    {
+                        name: "Saus",
+                        type: "radio",
+                        choices: ["Saus Tomat", "Saus Sambal", "Mayonaise"],
+                        default: "Saus Tomat"
+                    },
+                    {
+                        name: "Ukuran",
+                        type: "radio",
+                        choices: ["Regular", "Large"],
+                        default: "Regular"
+                    }
+                ]
+            },
+            {
+                id: 7,
+                name: "Martabak Manis Coklat Keju",
+                price: 40000,
+                image: "images/martabakmanis.png",
+                description: "Martabak manis dengan topping coklat dan keju melimpah.",
+                category: "Dessert",
+                options: [
+                    {
+                        name: "Topping Tambahan",
+                        type: "checkbox",
+                        choices: ["Kacang", "Wijen", "Susu Kental Manis"]
+                    }
+                ]
+            },
+            {
+                id: 8,
+                name: "Kopi Susu",
+                price: 18000,
+                image: "images/kopisusu.png",
+                description: "Kopi susu dingin yang creamy dan menyegarkan.",
+                category: "Minuman",
+                options: [
+                    {
+                        name: "Gula",
+                        type: "radio",
+                        choices: ["Normal", "Kurang Gula", "Tanpa Gula"],
+                        default: "Normal"
+                    },
+                    {
+                        name: "Suhu",
+                        type: "radio",
+                        choices: ["Dingin", "Hangat"],
+                        default: "Dingin"
+                    }
+                ]
+            }
+        ];
+
+        let cart = []; // Keranjang belanja sementara
+        let currentProduct = null; // Produk yang sedang ditampilkan di modal detail
+        const whatsappNumber = "6285156455878"; // Nomor WhatsApp tujuan
+
+        // Elemen DOM
+        const productGrid = document.getElementById('product-grid');
+        const categoryProductGrid = document.getElementById('category-product-grid');
+        const searchInput = document.getElementById('search-input');
+        const cartButton = document.getElementById('cart-button');
+        const cartCountSpan = document.getElementById('cart-count');
+        const cartModal = document.getElementById('cart-modal');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartTotalSpan = document.getElementById('cart-total');
+        const checkoutViaWaButton = document.getElementById('checkout-via-wa');
+        const clearCartButton = document.getElementById('clear-cart-button');
+
+        const productDetailModal = document.getElementById('product-detail-modal');
+        const modalProductImage = document.getElementById('modal-product-image');
+        const modalProductName = document.getElementById('modal-product-name');
+        const modalProductDescription = document.getElementById('modal-product-description');
+        const modalProductPrice = document.getElementById('modal-product-price');
+        const modalProductOptionsContainer = document.getElementById('modal-product-options'); // New: Container for options
+        const modalQtyMinus = document.getElementById('modal-qty-minus');
+        const modalQtySpan = document.getElementById('modal-qty');
+        const modalQtyPlus = document.getElementById('modal-qty-plus');
+        const addToCartFromModalButton = document.getElementById('add-to-cart-from-modal');
+        const orderViaWaFromModalButton = document.getElementById('order-via-wa-from-modal');
+        const shareProductViaWaButton = document.getElementById('share-product-via-wa');
+
+        const deliveryAddressInput = document.getElementById('delivery-address');
+        const saveAddressButton = document.getElementById('save-address-button');
+        const addressStatus = document.getElementById('address-status');
+
+        const profileNameInput = document.getElementById('profile-name');
+        const profileEmailInput = document.getElementById('profile-email');
+        const saveProfileButton = document.getElementById('save-profile-button');
+        const profileStatus = document.getElementById('profile-status');
+
+        // Fungsi untuk menampilkan/menyembunyikan halaman
+        function showPage(pageId) {
+            console.log(`Navigating to page: ${pageId}`); // Debugging: Log halaman yang dituju
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(pageId).classList.remove('hidden');
+        }
+
+        // Fungsi untuk memformat harga ke Rupiah
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+        }
+
+        // Fungsi untuk merender produk ke grid
+        function renderProducts(productsToRender, targetGrid) {
+            console.log(`Rendering products to ${targetGrid.id}. Products to render:`, productsToRender); // Debugging: Log products and target grid
+            targetGrid.innerHTML = ''; // Bersihkan grid sebelumnya
+            if (productsToRender.length === 0) {
+                targetGrid.innerHTML = '<p class="text-center text-gray-500 col-span-full">Tidak ada produk yang ditemukan.</p>';
+                return;
+            }
+
+            productsToRender.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'bg-white rounded-lg shadow-md overflow-hidden transform transition-transform duration-200 hover:scale-105 cursor-pointer';
+                productCard.dataset.productId = product.id; // Simpan ID produk
+                productCard.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-40 object-cover">
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold text-gray-800 truncate">${product.name}</h3>
+                        <p class="text-green-600 font-bold mt-1">${formatRupiah(product.price)}</p>
+                        <div class="flex items-center justify-between mt-3">
+                            <div class="flex items-center space-x-2">
+                                <button class="qty-minus px-2 py-0.5 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors duration-200 text-sm">-</button>
+                                <span class="qty-display font-medium text-sm">0</span>
+                                <button class="qty-plus px-2 py-0.5 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors duration-200 text-sm">+</button>
+                            </div>
+                            <button class="add-to-cart-btn px-3 py-1 bg-orange-500 text-white text-sm rounded-md hover:bg-orange-600 transition-colors duration-200 shadow-sm">
+                                Tambah
+                            </button>
+                        </div>
+                    </div>
+                `;
+                targetGrid.appendChild(productCard);
+
+                // Event listener untuk tombol +/- dan Tambah
+                const qtyMinusBtn = productCard.querySelector('.qty-minus');
+                const qtyPlusBtn = productCard.querySelector('.qty-plus');
+                const qtyDisplay = productCard.querySelector('.qty-display');
+                const addToCartBtn = productCard.querySelector('.add-to-cart-btn');
+
+                let currentQty = 0;
+
+                qtyMinusBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Mencegah membuka modal
+                    if (currentQty > 0) {
+                        currentQty--;
+                        qtyDisplay.textContent = currentQty;
+                    }
+                });
+
+                qtyPlusBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Mencegah membuka modal
+                    currentQty++;
+                    qtyDisplay.textContent = currentQty;
+                });
+
+                addToCartBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Mencegah membuka modal
+                    if (currentQty > 0) {
+                        addToCart(product, currentQty);
+                        currentQty = 0; // Reset kuantitas setelah ditambahkan ke keranjang
+                        qtyDisplay.textContent = currentQty;
+                    } else {
+                        alertMessage("Silakan atur jumlah produk terlebih dahulu.", "bg-red-500");
+                    }
+                });
+
+                // Event listener untuk membuka modal detail produk
+                productCard.addEventListener('click', () => openProductDetailModal(product));
+            });
+        }
+
+        // Fungsi untuk membuka modal
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        // Fungsi untuk menutup modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Fungsi untuk membuka modal detail produk
+        function openProductDetailModal(product) {
+            currentProduct = product; // Set produk yang sedang aktif
+            modalProductImage.src = product.image;
+            modalProductImage.alt = product.name;
+            modalProductName.textContent = product.name;
+            modalProductDescription.textContent = product.description;
+            modalProductPrice.textContent = formatRupiah(product.price);
+            modalQtySpan.textContent = 1; // Reset quantity in modal to 1
+
+            // Clear previous options
+            modalProductOptionsContainer.innerHTML = '';
+
+            // Render options if available
+            if (product.options && product.options.length > 0) {
+                product.options.forEach(optionGroup => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'mb-3';
+                    groupDiv.innerHTML = `<p class="font-semibold text-gray-700 mb-2">${optionGroup.name}:</p>`;
+                    
+                    optionGroup.choices.forEach(choice => {
+                        const choiceDiv = document.createElement('div');
+                        choiceDiv.className = 'flex items-center mb-1';
+                        const inputId = `option-${product.id}-${optionGroup.name.replace(/\s+/g, '-')}-${choice.replace(/\s+/g, '-')}`;
+                        
+                        let inputElement = null;
+                        if (optionGroup.type === 'radio') {
+                            inputElement = `<input type="radio" id="${inputId}" name="${optionGroup.name.replace(/\s+/g, '-')}" value="${choice}" class="mr-2" ${choice === optionGroup.default ? 'checked' : ''}>`;
+                        } else if (optionGroup.type === 'checkbox') {
+                            inputElement = `<input type="checkbox" id="${inputId}" name="${optionGroup.name.replace(/\s+/g, '-')}" value="${choice}" class="mr-2">`;
+                        }
+                        
+                        choiceDiv.innerHTML += `${inputElement}<label for="${inputId}" class="text-gray-700">${choice}</label>`;
+                        groupDiv.appendChild(choiceDiv);
+                    });
+                    modalProductOptionsContainer.appendChild(groupDiv);
+                });
+            }
+
+            openModal('product-detail-modal');
+        }
+
+        // Event listeners untuk tombol kuantitas di modal detail produk
+        modalQtyMinus.addEventListener('click', () => {
+            let qty = parseInt(modalQtySpan.textContent);
+            if (qty > 1) {
+                modalQtySpan.textContent = qty - 1;
+            }
+        });
+
+        modalQtyPlus.addEventListener('click', () => {
+            let qty = parseInt(modalQtySpan.textContent);
+            modalQtySpan.textContent = qty + 1;
+        });
+
+        // Fungsi untuk mendapatkan opsi yang dipilih dari modal
+        function getSelectedOptionsFromModal() {
+            const selectedOptions = {};
+            if (currentProduct && currentProduct.options) {
+                currentProduct.options.forEach(optionGroup => {
+                    const groupName = optionGroup.name.replace(/\s+/g, '-');
+                    if (optionGroup.type === 'radio') {
+                        const selectedRadio = document.querySelector(`input[name="${groupName}"]:checked`);
+                        if (selectedRadio) {
+                            selectedOptions[optionGroup.name] = selectedRadio.value;
+                        }
+                    } else if (optionGroup.type === 'checkbox') {
+                        const selectedCheckboxes = Array.from(document.querySelectorAll(`input[name="${groupName}"]:checked`)).map(cb => cb.value);
+                        if (selectedCheckboxes.length > 0) {
+                            selectedOptions[optionGroup.name] = selectedCheckboxes;
+                        }
+                    }
+                });
+            }
+            return selectedOptions;
+        }
+
+        // Fungsi untuk menambahkan produk ke keranjang
+        addToCartFromModalButton.addEventListener('click', () => {
+            if (currentProduct) {
+                const quantity = parseInt(modalQtySpan.textContent);
+                if (quantity <= 0) {
+                    alertMessage("Silakan atur jumlah produk terlebih dahulu.", "bg-red-500");
+                    return;
+                }
+
+                const selectedOptions = getSelectedOptionsFromModal();
+                
+                const existingItemIndex = cart.findIndex(item => 
+                    item.id === currentProduct.id && 
+                    JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
+                );
+
+                if (existingItemIndex > -1) {
+                    cart[existingItemIndex].quantity += quantity;
+                } else {
+                    cart.push({ ...currentProduct, quantity: quantity, selectedOptions: selectedOptions });
+                }
+                updateCartDisplay();
+                alertMessage(`${quantity} ${currentProduct.name} ditambahkan ke keranjang!`, "bg-green-500");
+                closeModal('product-detail-modal');
+            }
+        });
+
+
+        // Fungsi untuk mendapatkan nama pengguna dari localStorage
+        function getUserName() {
+            return localStorage.getItem('profileName') || 'Pelanggan';
+        }
+
+        // Event listener untuk tombol "Pesan via WhatsApp" di modal detail
+        orderViaWaFromModalButton.addEventListener('click', () => {
+            if (currentProduct) {
+                const quantity = parseInt(modalQtySpan.textContent);
+                if (quantity <= 0) {
+                    alertMessage("Silakan atur jumlah produk terlebih dahulu.", "bg-red-500");
+                    return;
+                }
+
+                const userName = getUserName();
+                const selectedOptions = getSelectedOptionsFromModal();
+                let optionsText = '';
+                for (const key in selectedOptions) {
+                    if (Array.isArray(selectedOptions[key])) {
+                        optionsText += `\n  - ${key}: ${selectedOptions[key].join(', ')}`;
+                    } else {
+                        optionsText += `\n  - ${key}: ${selectedOptions[key]}`;
+                    }
+                }
+
+                const message = `Halo, saya ${userName}, ingin memesan:\n- ${currentProduct.name} (${quantity}x) ${optionsText} - ${formatRupiah(currentProduct.price * quantity)}\n\nTotal: ${formatRupiah(currentProduct.price * quantity)}\n\nAlamat Pengiriman: ${deliveryAddressInput.value || 'Belum diatur'}\n\nTerima kasih!`;
+                
+                const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+                console.log("WhatsApp URL (Product Detail):", whatsappUrl); // Debugging: Log URL WhatsApp
+                window.open(whatsappUrl, '_blank');
+                closeModal('product-detail-modal');
+            }
+        });
+
+        // Event listener untuk tombol "Bagikan Produk via WhatsApp" di modal detail
+        shareProductViaWaButton.addEventListener('click', () => {
+            if (currentProduct) {
+                const shareText = `Lihat produk ini: ${currentProduct.name} - ${formatRupiah(currentProduct.price)}\n${currentProduct.description}\n\n[Gambar produk: ${currentProduct.image}]`;
+                const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+                console.log("WhatsApp Share URL:", whatsappShareUrl); // Debugging: Log URL Share WhatsApp
+                window.open(whatsappShareUrl, '_blank');
+            }
+        });
+
+        // Fungsi untuk memperbarui tampilan keranjang
+        function updateCartDisplay() {
+            cartItemsContainer.innerHTML = '';
+            let total = 0;
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-center text-gray-500">Keranjang kosong.</p>';
+            } else {
+                cart.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+
+                    let optionsDisplay = '';
+                    if (item.selectedOptions && Object.keys(item.selectedOptions).length > 0) {
+                        optionsDisplay += '<ul class="list-disc list-inside text-xs text-gray-500 mt-1">';
+                        for (const key in item.selectedOptions) {
+                            if (Array.isArray(item.selectedOptions[key])) {
+                                optionsDisplay += `<li>${key}: ${item.selectedOptions[key].join(', ')}</li>`;
+                            } else {
+                                optionsDisplay += `<li>${key}: ${item.selectedOptions[key]}</li>`;
+                            }
+                        }
+                        optionsDisplay += '</ul>';
+                    }
+
+                    const cartItemDiv = document.createElement('div');
+                    cartItemDiv.className = 'flex items-center justify-between bg-gray-50 p-3 rounded-lg shadow-sm';
+                    cartItemDiv.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded-md">
+                            <div>
+                                <h4 class="font-semibold text-gray-800">${item.name}</h4>
+                                <p class="text-sm text-gray-600">${formatRupiah(item.price)} x ${item.quantity}</p>
+                                ${optionsDisplay}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-green-600">${formatRupiah(itemTotal)}</span>
+                            <button class="remove-from-cart-btn text-red-500 hover:text-red-700 transition-colors duration-200" data-id="${item.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    cartItemsContainer.appendChild(cartItemDiv);
+                });
+            }
+            cartTotalSpan.textContent = formatRupiah(total);
+            cartCountSpan.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+            // Add event listeners for remove buttons
+            document.querySelectorAll('.remove-from-cart-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const productIdToRemove = parseInt(e.currentTarget.dataset.id);
+                    // To handle removing specific items with options, we might need a more robust ID or comparison
+                    // For now, it removes the first matching product ID.
+                    const itemIndex = cart.findIndex(item => item.id === productIdToRemove);
+                    if (itemIndex > -1) {
+                        cart.splice(itemIndex, 1);
+                    }
+                    updateCartDisplay();
+                    alertMessage("Produk dihapus dari keranjang.", "bg-red-500");
+                });
+            });
+        }
+
+        // Event listener untuk tombol keranjang
+        cartButton.addEventListener('click', () => {
+            updateCartDisplay();
+            openModal('cart-modal');
+        });
+
+        // Event listener untuk tombol checkout via WhatsApp
+        checkoutViaWaButton.addEventListener('click', () => {
+            if (cart.length === 0) {
+                alertMessage("Keranjang belanja Anda kosong!", "bg-red-500");
+                return;
+            }
+
+            const userName = getUserName();
+            let orderDetails = `Halo, saya ${userName}, ingin memesan:\n\n`;
+            cart.forEach(item => {
+                let optionsText = '';
+                if (item.selectedOptions && Object.keys(item.selectedOptions).length > 0) {
+                    for (const key in item.selectedOptions) {
+                        if (Array.isArray(item.selectedOptions[key])) {
+                            optionsText += `\n    - ${key}: ${item.selectedOptions[key].join(', ')}`;
+                        } else {
+                            optionsText += `\n    - ${key}: ${item.selectedOptions[key]}`;
+                        }
+                    }
+                }
+                orderDetails += `- ${item.name} (${item.quantity}x) ${optionsText} - ${formatRupiah(item.price * item.quantity)}\n`;
+            });
+            orderDetails += `\nTotal: ${cartTotalSpan.textContent}\n`;
+            orderDetails += `Alamat Pengiriman: ${deliveryAddressInput.value || 'Belum diatur'}\n\nTerima kasih!`;
+
+            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(orderDetails)}`;
+            console.log("WhatsApp URL (Checkout):", whatsappUrl); // Debugging: Log URL WhatsApp
+            window.open(whatsappUrl, '_blank');
+            cart = []; // Kosongkan keranjang setelah checkout
+            updateCartDisplay();
+            closeModal('cart-modal');
+            alertMessage("Pesanan Anda telah dikirim ke WhatsApp!", "bg-green-500");
+        });
+
+        // Event listener untuk tombol bersihkan keranjang
+        clearCartButton.addEventListener('click', () => {
+            cart = [];
+            updateCartDisplay();
+            alertMessage("Keranjang belanja telah dikosongkan.", "bg-red-500");
+        });
+
+        // Fungsi pencarian
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredProducts = products.filter(product =>
+                product.name.toLowerCase().includes(searchTerm) ||
+                product.description.toLowerCase().includes(searchTerm) ||
+                product.category.toLowerCase().includes(searchTerm)
+            );
+            renderProducts(filteredProducts, productGrid);
+        });
+
+        // Event listeners untuk navigasi
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const targetId = e.currentTarget.dataset.target;
+                showPage(targetId);
+                // Render products again if navigating back to home or categories
+                if (targetId === 'home') {
+                    renderProducts(products, productGrid);
+                } else if (targetId === 'categories') {
+                    console.log("Navigating to Categories: Filtering by 'Semua'"); // Debugging: Log saat menavigasi ke kategori
+                    filterProductsByCategory('Semua'); // Show all products in categories initially
+                }
+            });
+        });
+
+        // Event listeners untuk filter kategori
+        document.querySelectorAll('.category-filter').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const category = e.currentTarget.dataset.category;
+                console.log(`Category filter clicked: ${category}`); // Debugging: Log kategori yang diklik
+                filterProductsByCategory(category);
+            });
+        });
+
+        // Fungsi untuk memfilter produk berdasarkan kategori
+        function filterProductsByCategory(category) {
+            console.log(`Filtering products for category: "${category}"`); // Debugging: Log kategori yang digunakan untuk filter
+            let filtered = products;
+            if (category !== 'Semua') {
+                filtered = products.filter(product => product.category === category);
+            }
+            console.log("Filtered products result:", filtered); // Debugging: Log hasil produk yang difilter
+            renderProducts(filtered, categoryProductGrid);
+        }
+
+        // Fungsi untuk menyimpan alamat
+        saveAddressButton.addEventListener('click', () => {
+            const address = deliveryAddressInput.value.trim();
+            if (address) {
+                localStorage.setItem('deliveryAddress', address);
+                addressStatus.textContent = "Alamat berhasil disimpan!";
+                addressStatus.classList.remove('text-red-500');
+                addressStatus.classList.add('text-green-500');
+            } else {
+                addressStatus.textContent = "Alamat tidak boleh kosong!";
+                addressStatus.classList.remove('text-green-500');
+                addressStatus.classList.add('text-red-500');
+            }
+            setTimeout(() => addressStatus.textContent = '', 3000);
+        });
+
+        // Fungsi untuk memuat alamat saat halaman dimuat
+        function loadAddress() {
+            const savedAddress = localStorage.getItem('deliveryAddress');
+            if (savedAddress) {
+                deliveryAddressInput.value = savedAddress;
+            }
+        }
+
+        // Fungsi untuk menyimpan profil
+        saveProfileButton.addEventListener('click', () => {
+            const name = profileNameInput.value.trim();
+            const email = profileEmailInput.value.trim();
+            if (name && email) {
+                localStorage.setItem('profileName', name);
+                localStorage.setItem('profileEmail', email);
+                profileStatus.textContent = "Profil berhasil disimpan!";
+                profileStatus.classList.remove('text-red-500');
+                profileStatus.classList.add('text-green-500');
+            } else {
+                profileStatus.textContent = "Nama dan Email tidak boleh kosong!";
+                profileStatus.classList.remove('text-green-500');
+                profileStatus.classList.add('text-red-500');
+            }
+            setTimeout(() => profileStatus.textContent = '', 3000);
+        });
+
+        // Fungsi untuk memuat profil saat halaman dimuat
+        function loadProfile() {
+            const savedName = localStorage.getItem('profileName');
+            const savedEmail = localStorage.getItem('profileEmail');
+            if (savedName) {
+                profileNameInput.value = savedName;
+            }
+            if (savedEmail) {
+                profileEmailInput.value = savedEmail;
+            }
+        }
+
+        // Fungsi untuk menampilkan pesan alert sementara
+        function alertMessage(message, bgColorClass) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `fixed bottom-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-[1001] ${bgColorClass} transition-all duration-300 ease-out transform translate-y-full opacity-0`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+
+            // Animate in
+            setTimeout(() => {
+                alertDiv.classList.remove('translate-y-full', 'opacity-0');
+                alertDiv.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+
+            // Animate out and remove
+            setTimeout(() => {
+                alertDiv.classList.remove('translate-y-0', 'opacity-100');
+                alertDiv.classList.add('translate-y-full', 'opacity-0');
+                alertDiv.addEventListener('transitionend', () => alertDiv.remove());
+            }, 3000);
+        }
+
+        // Inisialisasi aplikasi saat DOM siap
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts(products, productGrid); // Render semua produk di halaman beranda
+            updateCartDisplay(); // Perbarui tampilan keranjang saat aplikasi dimuat
+            loadAddress(); // Muat alamat tersimpan
+            loadProfile(); // Muat profil tersimpan
+        });
+    </script>
+</body>
+</html>
